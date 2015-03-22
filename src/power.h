@@ -63,6 +63,7 @@ public:
 
 	ast* mf();
 	ast* mf(int, int, bool);
+	ast* mf(int);
 	ast* est();
 	ast* esth(); //estimator with z hat
 	ast* esth(int, int);
@@ -73,7 +74,9 @@ public:
 	ast* unsafe(double);
 	ast* unsafe(double, int, int);
 	ast* fdi(int,int,double,double);
+	ast* fdi(int,double,double);
 
+	ast* cegar(int, int);
 	void dump();
 
 };

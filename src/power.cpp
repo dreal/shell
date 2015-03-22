@@ -285,6 +285,55 @@ ast* power_grid::mf() {
 	return result;
 }
 
+ast* power_grid::mf(int bus) {//full neighborhood
+	ast* result = top();
+	for (int i=bus; i<bus+1; i++) {//todo: change this to e bounds
+		ast* a1 = eq( zp[i][i], p(i,volts,phasors));  
+		ast* a2 = eq( zq[i][i], q(i,volts,phasors));  
+		result = land(result,land(a1, a2));
+		if (neighbors[i]!=NULL) {
+			for (set<int>::iterator it = neighbors[i]->begin();
+					it != neighbors[i]->end(); it++) {
+				int j = *it;
+				//if (j > i) {
+					ast* a3 = eq(zp[i][j],p(i,j,volts,phasors));
+					ast* a4 = eq(zq[i][j],q(i,j,volts,phasors));	
+					result = land(result, land(a3, a4));				
+				//} 
+			}
+		}
+	}
+	simplify(result);
+	return result;
+}
+
+
+ast* power_grid::cegar(int bus, int n) { //gradually add in n ctrs
+	ast* result = top();
+		
+	int i = bus;
+
+	for (int k=0; k<n; k++) {
+		ast* a1 = eq( zp[i][i], p(i,volts,phasors));  
+		ast* a2 = eq( zq[i][i], q(i,volts,phasors)); 
+
+		if (neighbors[i]!=NULL) {
+			set<int>::iterator it = neighbors[i]->begin();
+			//		it != neighbors[i]->end(); it++) {
+			int j = *it;
+				//if (j > i) {
+			ast* a3 = eq(zp[i][j],p(i,j,volts,phasors));
+			ast* a4 = eq(zq[i][j],q(i,j,volts,phasors));	
+			result = land(result, land(a3, a4));	
+
+			i = j;			
+		}
+	}
+	simplify(result);
+	return (result);
+}
+
+
 ast* power_grid::mf(int i, int j, bool poq) {
 	ast* result;
 	if (i==j) {//bus
@@ -712,19 +761,88 @@ ast* power_grid::esth(int i, int j) {
 	return result;
 }
 
+//line case
 ast* power_grid::fdi(int i, int j, double tau, double eps) {
+
 	ast* result;
-	
-	ast* f1 = land(mf(i,j,true),mf(i,j,false));
-	ast* f2 = land(monitor(tau,i,j,true),monitor(tau,i,j,false));
-	ast* f3 = land(attack(i,j,true),attack(i,j,false));
-	ast* f4 = land(esth(i,j),unsafe(eps,i,j));
+
+//	ast* f2 = land(monitor(tau,i,j,true),monitor(tau,i,j,false));
+
+//	cout<<"monitor:"<<endl<<f2 -> print_infix()<<endl;
+
+	//ast* f3 = land(attack(i,j,true),attack(i,j,false));
+	//cout<<"attack:"<<endl<<f3 -> print_infix()<<endl;
+
+	//ast* f4 = land(esth(i,j),unsafe(eps,i,j));
+	//cout<<"estimation and unsafe:"<<endl<<f4 -> print_infix()<<endl;
 
 //	result = land(land(f1, land(f2, f3)),f5);
-	result = land(f1, land(f2, land(f3, f4)));
+//	result = land(f1, land(f2, land(f3, f4)));
+
+	//result = land(f2, land(f3,f4));
+
+	result = mf(); 
 	simplify(result);
 	return result;
 }
+
+//bus case
+ast* power_grid::fdi(int i, double tau, double eps) {
+	ast* result = top();
+	
+//	ast* f1 = land(mf(i,j,true),mf(i,j,false));
+//	cout<<"measurement function:"<<endl<<f1 -> print_infix()<<endl;
+
+	ast* f;
+
+	f = land(
+				land(monitor(tau,i,i,true),monitor(tau,i,i,false)),
+				land(
+					land(attack(i,i,true),attack(i,i,false)),
+					esth(i,i)
+					)
+			);
+	
+	result = land(result, f);
+
+	if (neighbors[i]!=NULL) {
+		for (set<int>::iterator it=neighbors[i]->begin(); 					
+								it != neighbors[i]->end() ; it++ ) 
+		{
+			int j = *it;
+
+			f = land(
+					land(monitor(tau,i,j,true),monitor(tau,i,j,false)),
+					land(
+						land(attack(i,j,true),attack(i,j,false)),
+						esth(i,j)
+						)
+				);
+			result = land(result, f);
+
+		}
+		cout<<".";
+	}
+/*
+	ast* f2 = land(monitor(tau,i,j,true),monitor(tau,i,j,false));
+	cout<<"monitor:"<<endl<<f2 -> print_infix()<<endl;
+
+	ast* f3 = land(attack(i,j,true),attack(i,j,false));
+	cout<<"attack:"<<endl<<f3 -> print_infix()<<endl;
+
+	ast* f4 = land(esth(i,j),unsafe(eps,i,j));
+	cout<<"estimation and unsafe:"<<endl<<f4 -> print_infix()<<endl;
+
+//	result = land(land(f1, land(f2, f3)),f5);
+//	result = land(f1, land(f2, land(f3, f4)));
+
+	result = land(f2, land(f3,f4));
+*/
+
+	simplify(result);
+	return result;
+}
+
 
 
 void power_grid::dump() {	

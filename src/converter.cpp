@@ -6,6 +6,9 @@
 
 using namespace std;
 
+extern table* full_table;
+extern converter* operators;
+
 ast* converter::dup(ast* source) {
 	ast* result = new ast();
 	result -> set_head_symbol(source->get_head_symbol());
@@ -62,7 +65,8 @@ int main () {
 	dreal_file << phi->print_smt2(polarity);
 	dreal_file.close();
 
-	system("./dReal --proof --precision 0.0001 dreal_file.smt2");
+	//cout<<"./dReal --proof --precision 0.01 dreal_file.smt2";
+	system("./dReal --proof --precision 0.01 dreal_file.smt2");
 
 	ifstream	dreal_result;
 	dreal_result.open("dreal_file.smt2.proof");
@@ -78,7 +82,7 @@ int main () {
 //		printf("sat answer is returned\n");
 		while (dreal_result.get(cc)) { //collect the fields
 			if ((isalnum(cc)||ispunct(cc))
-			 		&& cc!=',' && cc!= ':' && cc!='[' && cc!= ']')
+			 		&& cc!=',' && cc!= ':' && cc!='[' && cc!= ']' && cc!= ';')
 				buffer += cc;
 			else {
 				if (!buffer.empty())
@@ -86,9 +90,10 @@ int main () {
 				buffer.clear();
 			}
 		}
-		//for (int i=0; i<fields.size(); i++) cout<<fields[i]<<endl;
+		//cout<<endl;
+		//for (int i=0; i<fields.size(); i++) cout<<i<<": "<<fields[i]<<endl;
 
-		for(int i=0; i<fields.size(); i=i+4) {
+		for(int i=0; i<fields.size(); i=i+3) {
 
 			//avoid underflow
 			if (fields[i+1][(fields[i+1]).size()-5]=='e'&& 
@@ -99,6 +104,9 @@ int main () {
 					fields[i+2][(fields[i+2]).size()-4]=='-')
 //			if (fields[i+2].find("e-308")!= std::string::npos)
 				fields[i+2] = "0";
+
+		//	cout<<"fields_a: "<<fields[i+1]<<endl;
+		//	cout<<"fields_b: "<<fields[i+2]<<endl;
 
 			double a = stod(fields[i+1]);
 			double b = stod(fields[i+2]);
@@ -149,6 +157,7 @@ int main () {
 	sol.clear();
 
 	simplify(phi);
+	cout<< phi->print_smt2(polarity);
 	dreal_file << phi->print_smt2(polarity);
 	dreal_file.close();
 
@@ -171,6 +180,12 @@ int main () {
 
 	getline(dreal_result, cline);
 
+	bool res = (cline.find("SAT") == 0);
+	dreal_result.close();
+
+	return res;
+	
+	/*
 	if (cline.find("SAT") == 0) {
 //		printf("sat answer is returned\n");
 		while (dreal_result.get(cc)) { //collect the fields
@@ -215,6 +230,7 @@ int main () {
 
 	dreal_result.close();
 	return false;
+	*/
 }
 
 void converter::simplify(ast* a) {
@@ -484,7 +500,6 @@ bool converter::cegis(ast* phi, vector<ast*>& x,
 	while(get_dreal_solutions(phi_temp, sol, true)) {
 //		cout<<"Found counterexamples with: "<<phi_temp -> print_smt2(true);
 		//cin.get();
-		
 		//sol now keeps the counterexample for x
 		phi_temp = phi;
 		phi_sol = top(); //phi_sol will encode conditions for excluding explored examples
@@ -545,6 +560,21 @@ bool converter::cegis(ast* phi, vector<ast*>& x,
 }
 
 
+ast* operator+(ast& a1, ast& a2) { 
+	return operators->add(&a1,&a2);
+}
+
+ast* operator-(ast& a1, ast& a2) { 
+	return operators->sub(&a1,&a2);
+}
+
+ast* operator*(ast& a1, ast& a2) {
+	return operators->mul(&a1,&a2);
+}
+	
+ast* operator/(ast& a1, ast& a2) {
+	return operators->div(&a1,&a2);
+}
 
 
 

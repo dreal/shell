@@ -210,7 +210,7 @@ void tester::powertest2(){
 	string label = "";
 	string label2 = "prec";
 
-	double precision = 1;
+	double precision = 0.1;
 	int index=0;
 	double tau = 0.5;
 	double eps = 10;
@@ -224,15 +224,21 @@ void tester::powertest2(){
 //for (int i1=0; i1<20; i1++) {
 //	for (int j=1; j<5; j++) {
 
-for (int i1=0; i1<2; i1++) {
-	for (int j=2; j<3; j++) {
+for (int i1=5; i1<6; i1++) {
+	for (int j=1; j<10; j++) {
 
-		size = 10+i1*5;
+		cout<<"size: ";
+		cin>>i1;
+
+		cout<<"degree: ";
+		cin>>j;
+		//size = 10+i1*5;
+		size = i1*5;
 
 		degree = j;
 
 		srand(time(NULL));
-		nattack = rand()%5;
+		nattack = 1;
 
 		power_grid	grid(symbol_table, size);
 		test_degree.push_back(degree);
@@ -240,19 +246,55 @@ for (int i1=0; i1<2; i1++) {
 		test_nattacks.push_back(nattack);
 
 		grid.random_config(degree);
-//	grid.dump();
- 		f = grid.fdi(0,0,tau,eps);
+		grid.dump();
+
+		int targeti = rand()%size;
+
+//	for (int i = 0 ; i<10; i++){
+
+
+		int bound;
+		cout<<"how many?(>=1): ";
+		cin>> bound;
+
+		f = grid.cegar(targeti, bound);
+
+  //  }
+/*
+		int bound;
+		cout<<"how many? ";
+		cin>> bound;
+
+		f = top();
+
+		for (int i4 = 0; i4< bound; i4++) {
+			int targeti = rand()%size;
+			int targetj = rand()%size;
+
+			f = land(f,grid.mf(target1i, targetj, true));			
+			f = land(f,grid.mf(target1i, targetj, true));
+		} 
+*/
+// 		f = grid.fdi(0,0,tau,eps);
+
+// 		for (int i3 = 0; i3<i1; i3++) {
+ //			for (int i4=0; i4<i3; i4++) {
+ 	//			f = grid.fdi(i3, i4, tau, eps);
+ 	//		}
+ 	//	}
 
  		int m = 0;
-		for (int ki = 1; ki< nattack; ki++){
-			f = lor(f,grid.fdi(0,1,tau,eps));
-		}
+ 		//multiple attacks
+//		for (int ki = 1; ki< nattack; ki++){
+//			f = lor(f,grid.fdi(0,1,tau,eps));
+//		}
 //	cout<<f1->print_smt2(true)<<endl;
 
 		map<symbol*, symbol*> sol;
-//	get_dreal_solutions(f1,sol,true);
+//		get_dreal_solutions(f,sol,true);
 
-		nnonlinear.push_back(f->count("sin")+f->count("cos")+f->count("*")+f->count("/"));
+//		nnonlinear.push_back(f->count("sin")+f->count("cos")+f->count("*")+f->count("/"));
+		int numb = f->count("sin")+f->count("cos")+f->count("*")+f->count("/");
 
     	label += to_string(degree);
 		
@@ -261,13 +303,15 @@ for (int i1=0; i1<2; i1++) {
 		label.clear();
 
 		end = std::chrono::system_clock::now();
+		cout<<numb<<endl;
+
 
     	std::chrono::duration<double> elapsed_seconds = end-start;
 
     	test_time.push_back(elapsed_seconds.count());
 
 	}
-
+/*
     label2 = to_string(precision);
     stats_name += label2;
     stats_file.open(stats_name);
@@ -296,6 +340,7 @@ for (int i1=0; i1<2; i1++) {
 
     stats_file.close();
     stats_name= "stats_";
+*/
 }
 
 
